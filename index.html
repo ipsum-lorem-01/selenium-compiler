@@ -9236,9 +9236,10 @@ function revealEl(el, pageOnly) {
     if (!alt || !alt.getClientRects || !alt.getClientRects().length) return;
     el = alt;
   }
+  if (el.closest && el.closest('.masthead')) return;   /* the shop's header is pinned: always on screen */
   if (pageOnly) {                              /* reads and waits: move the page only if the element is out of sight */
-    const r = el.getBoundingClientRect(), b = stage.getBoundingClientRect();
-    if (r.bottom <= b.top + 8 || r.top >= b.bottom - 8) stage.scrollTop += (r.top - b.top) - (b.height - r.height) / 2;
+    const r = el.getBoundingClientRect(), v = stageView();
+    if (r.bottom <= v.top + 8 || r.top >= v.bottom - 8) centreIn(r, v);
     return;
   }
   let n = el.parentElement;
@@ -9250,8 +9251,21 @@ function revealEl(el, pageOnly) {
     }
     n = n.parentElement;
   }
-  const r = el.getBoundingClientRect(), b = stage.getBoundingClientRect();
-  if (r.top < b.top + 60 || r.bottom > b.bottom - 10) stage.scrollTop += (r.top - b.top) - (b.height - r.height) / 2;
+  const r = el.getBoundingClientRect(), v = stageView();
+  if (r.top < v.top + 12 || r.bottom > v.bottom - 10) centreIn(r, v);
+}
+/* the part of the browser you can actually see: below the shop's pinned header, if it is pinned now */
+function stageView() {
+  const b = stage.getBoundingClientRect();
+  let top = b.top;
+  const m = pageEl && pageEl.querySelector(':scope > .masthead, .masthead');
+  if (m && getComputedStyle(m).position === 'sticky') { const h = m.getBoundingClientRect(); if (h.top <= b.top + 2 && h.bottom > top && h.bottom < b.bottom) top = h.bottom; }
+  return {top, bottom: b.bottom};
+}
+function centreIn(r, v) {
+  const room = v.bottom - v.top;
+  const want = r.height > room - 16 ? v.top + 8 : v.top + (room - r.height) / 2;
+  stage.scrollTop += r.top - want;
 }
 /* Chrome's date and time fields take the digits in the field order of the locale (en-US: mm/dd/yyyy) */
 function setDateLike(el, text) {
